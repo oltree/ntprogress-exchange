@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import Box from '@mui/material/Box';
 import InputLabel from '@mui/material/InputLabel';
 import MenuItem from '@mui/material/MenuItem';
@@ -8,12 +8,25 @@ import TextField from '@mui/material/TextField';
 import Paper from '@mui/material/Paper';
 import Button from '@mui/material/Button';
 
+import { useAppDispatch, useAppSelector } from '../../hooks/hooks';
+import { createDeal } from './tikerSlice';
+import { tikerSelector } from './selector';
+
 const Tiker = () => {
-  const [age, setAge] = useState('');
+  const dispatch = useAppDispatch();
+  const balance = useAppSelector(tikerSelector);
+
+  const [deal, setDeal] = useState('');
 
   const handleChange = (event: SelectChangeEvent) => {
-    setAge(event.target.value as string);
+    setDeal(event.target.value as string);
   };
+
+  const handleDealCreate = () => {
+    dispatch(createDeal(deal));
+  };
+
+  console.log(deal);
 
   return (
     <Box
@@ -42,15 +55,15 @@ const Tiker = () => {
             <Select
               labelId="demo-simple-select-label"
               id="demo-simple-select"
-              value={age}
+              value={deal}
               label="Currency pair"
               onChange={handleChange}
               size="small"
             >
-              <MenuItem value={10}>BYN/RUB</MenuItem>
-              <MenuItem value={20}>RUB/BYN</MenuItem>
-              <MenuItem value={30}>BYN/USD</MenuItem>
-              <MenuItem value={30}>USD/BYN</MenuItem>
+              <MenuItem value={0.5}>BYN/RUB</MenuItem>
+              <MenuItem value={2}>RUB/BYN</MenuItem>
+              <MenuItem value={0.25}>BYN/USD</MenuItem>
+              <MenuItem value={4}>USD/BYN</MenuItem>
             </Select>
           </FormControl>
         </Box>
@@ -68,7 +81,7 @@ const Tiker = () => {
             InputLabelProps={{
               shrink: true,
             }}
-            defaultValue={100000}
+            defaultValue={balance.rub}
             size="small"
           />
         </Box>
@@ -98,7 +111,7 @@ const Tiker = () => {
               shrink: true,
             }}
             size="small"
-            defaultValue={100000}
+            defaultValue={1.2}
           />
           <Button
             color="error"
@@ -124,7 +137,7 @@ const Tiker = () => {
               shrink: true,
             }}
             size="small"
-            defaultValue={100000}
+            defaultValue={1.4}
           />
           <Button
             color="success"

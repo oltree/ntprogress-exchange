@@ -1,5 +1,4 @@
-import List from '../lists';
-import Tiker from '../tiker';
+import { Tiker, List } from '../index';
 
 import styles from './index.module.scss';
 
