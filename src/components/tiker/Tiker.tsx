@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState, useCallback } from 'react';
 import Box from '@mui/material/Box';
 import InputLabel from '@mui/material/InputLabel';
 import MenuItem from '@mui/material/MenuItem';
@@ -11,22 +11,65 @@ import Button from '@mui/material/Button';
 import { useAppDispatch, useAppSelector } from '../../hooks/hooks';
 import { createDeal } from './tikerSlice';
 import { tikerSelector } from './selector';
+//import { IDeal } from './types';
+import { oddsForCurrencies } from './mock';
 
 const Tiker = () => {
   const dispatch = useAppDispatch();
   const balance = useAppSelector(tikerSelector);
 
-  const [deal, setDeal] = useState('');
+  const [tradingPair, setTradingPair] = useState<string>('BYN/RUB');
 
   const handleChange = (event: SelectChangeEvent) => {
-    setDeal(event.target.value as string);
+    setTradingPair(event.target.value as string);
   };
 
-  const handleDealCreate = () => {
-    dispatch(createDeal(deal));
-  };
+  const [deal, setDeal] = useState({
+    status: '',
+    side: '',
+    price: 1,
+    amount: 0,
+    instrument: tradingPair,
+    balance: 0,
+    currentCurrency: '',
+    exchangeCurrency: '',
+  });
 
-  console.log(deal);
+  const currentCoefficient: number =
+    oddsForCurrencies[tradingPair]?.coefficient;
+  const currentCurrency: string =
+    oddsForCurrencies[tradingPair]?.currentCurrency;
+  const exchangeCurrency: string =
+    oddsForCurrencies[tradingPair]?.exchangeCurrency;
+
+  const handleCreateDeal = useCallback(
+    (side: string) => {
+      setDeal((state) => {
+        const stateCopy = { ...state };
+
+        stateCopy.status = 'Active';
+        stateCopy.side = side;
+        stateCopy.price = currentCoefficient;
+        stateCopy.amount = balance[currentCurrency];
+        stateCopy.instrument = tradingPair;
+        stateCopy.currentCurrency = currentCurrency;
+        stateCopy.exchangeCurrency = exchangeCurrency;
+
+        return stateCopy;
+      });
+
+      dispatch(createDeal(deal));
+    },
+    [
+      dispatch,
+      currentCoefficient,
+      currentCurrency,
+      exchangeCurrency,
+      deal,
+      balance,
+      tradingPair,
+    ]
+  );
 
   return (
     <Box
@@ -38,6 +81,11 @@ const Tiker = () => {
       }}
       component={Paper}
     >
+      <div>
+        <div>{`BYN: ${balance.byn}`}</div>
+        <div>{`RUB: ${balance.rub}`}</div>
+        <div>{`USD: ${balance.usd}`}</div>
+      </div>
       <Box
         sx={{
           display: 'flex',
@@ -55,15 +103,17 @@ const Tiker = () => {
             <Select
               labelId="demo-simple-select-label"
               id="demo-simple-select"
-              value={deal}
+              value={tradingPair}
               label="Currency pair"
               onChange={handleChange}
               size="small"
             >
-              <MenuItem value={0.5}>BYN/RUB</MenuItem>
-              <MenuItem value={2}>RUB/BYN</MenuItem>
-              <MenuItem value={0.25}>BYN/USD</MenuItem>
-              <MenuItem value={4}>USD/BYN</MenuItem>
+              <MenuItem value={'BYN/RUB'}>BYN/RUB</MenuItem>
+              <MenuItem value={'RUB/BYN'}>RUB/BYN</MenuItem>
+              <MenuItem value={'RUB/USD'}>RUB/USD</MenuItem>
+              <MenuItem value={'USD/RUB'}>USD/RUB</MenuItem>
+              <MenuItem value={'BYN/USD'}>BYN/USD</MenuItem>
+              <MenuItem value={'USD/BYN'}>USD/BYN</MenuItem>
             </Select>
           </FormControl>
         </Box>
@@ -81,7 +131,7 @@ const Tiker = () => {
             InputLabelProps={{
               shrink: true,
             }}
-            defaultValue={balance.rub}
+            value={balance[currentCurrency]}
             size="small"
           />
         </Box>
@@ -95,7 +145,7 @@ const Tiker = () => {
           justifyContent: 'space-between',
         }}
       >
-        <Box
+        {/* <Box
           sx={{
             width: '100px',
             display: 'flex',
@@ -120,7 +170,7 @@ const Tiker = () => {
             Sell
           </Button>
         </Box>
-        <Box sx={{ width: '1px', bgcolor: '#000' }}></Box>
+        <Box sx={{ width: '1px', bgcolor: '#000' }}></Box> */}
         <Box
           sx={{
             width: '100px',
@@ -137,11 +187,13 @@ const Tiker = () => {
               shrink: true,
             }}
             size="small"
-            defaultValue={1.4}
+            value={currentCoefficient}
           />
           <Button
             color="success"
             variant="contained"
+            disabled={!currentCoefficient}
+            onClick={() => handleCreateDeal('Buy')}
           >
             Buy
           </Button>

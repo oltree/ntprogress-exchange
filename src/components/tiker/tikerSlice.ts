@@ -1,10 +1,10 @@
 import { createSlice } from '@reduxjs/toolkit';
 import { v4 as uuid } from 'uuid';
 
-export interface Tiker {
+export interface ITiker {
   id: string;
-  creationTime: Date;
-  changeTime: Date;
+  creationTime?: Date;
+  changeTime?: Date;
   status: 'Active' | 'Filled' | 'Rejected' | 'Canceled';
   side: 'Buy' | 'Sell';
   price: number;
@@ -19,8 +19,8 @@ export interface Balance {
 }
 
 export interface TikerState {
-  deals: Tiker[];
-  balance: Balance;
+  deals: ITiker[];
+  balance: any;
 }
 
 const initialState: TikerState = {
@@ -38,18 +38,32 @@ export const tikerSlice = createSlice({
   reducers: {
     createDeal: (
       state,
-      { payload: { status, side, price, amount, instrument } }
+      {
+        payload: {
+          status,
+          side,
+          price,
+          amount,
+          instrument,
+          balance,
+          currentCurrency,
+          exchangeCurrency,
+        },
+      }
     ) => {
       const deal = {
         id: uuid(),
-        creationTime: new Date(),
-        changeTime: new Date(),
-        status: status,
-        side: side,
-        price: price,
-        amount: amount,
-        instrument: instrument,
+        status,
+        side,
+        price,
+        amount,
+        instrument,
       };
+
+      state.balance[exchangeCurrency] = state.balance[currentCurrency] * price;
+      state.balance[currentCurrency] =
+        state.balance[currentCurrency] -
+        state.balance[exchangeCurrency] / price;
 
       state.deals.unshift(deal);
     },
