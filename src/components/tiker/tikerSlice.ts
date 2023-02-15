@@ -45,7 +45,6 @@ export const tikerSlice = createSlice({
           price,
           amount,
           instrument,
-          balance,
           currentCurrency,
           exchangeCurrency,
         },
@@ -60,10 +59,19 @@ export const tikerSlice = createSlice({
         instrument,
       };
 
-      state.balance[exchangeCurrency] = state.balance[currentCurrency] * price;
-      state.balance[currentCurrency] =
-        state.balance[currentCurrency] -
-        state.balance[exchangeCurrency] / price;
+      if (side === 'Buy') {
+        state.balance[exchangeCurrency] = amount * price;
+        state.balance[currentCurrency] =
+          state.balance[currentCurrency] -
+          state.balance[exchangeCurrency] / price;
+      }
+
+      if (side === 'Sell') {
+        state.balance[exchangeCurrency] =
+          state.balance[exchangeCurrency] + amount * price;
+        state.balance[currentCurrency] =
+          state.balance[currentCurrency] - amount;
+      }
 
       state.deals.unshift(deal);
     },

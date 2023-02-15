@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, ChangeEvent } from 'react';
 import Box from '@mui/material/Box';
 import InputLabel from '@mui/material/InputLabel';
 import MenuItem from '@mui/material/MenuItem';
@@ -19,28 +19,33 @@ const Tiker = () => {
   const balance = useAppSelector(tikerSelector);
 
   const [tradingPair, setTradingPair] = useState<string>('BYN/RUB');
-
-  const handleChange = (event: SelectChangeEvent) => {
+  const handleChangeTradingPair = (event: SelectChangeEvent) => {
     setTradingPair(event.target.value as string);
+  };
+
+  const currentCoefficientBuy: number =
+    oddsForCurrencies[tradingPair].coefficientBuy;
+  const currentCoefficientSell: number =
+    oddsForCurrencies[tradingPair].coefficientSell;
+  const currentCurrency: string =
+    oddsForCurrencies[tradingPair].currentCurrency;
+  const exchangeCurrency: string =
+    oddsForCurrencies[tradingPair].exchangeCurrency;
+
+  const [amount, setAmount] = useState('0');
+  const handleChangeAmount = (event: ChangeEvent<HTMLInputElement>) => {
+    setAmount(event.target.value as string);
   };
 
   const [deal, setDeal] = useState({
     status: '',
     side: '',
-    price: 1,
+    price: 0,
     amount: 0,
-    instrument: tradingPair,
-    balance: 0,
+    instrument: '',
     currentCurrency: '',
     exchangeCurrency: '',
   });
-
-  const currentCoefficient: number =
-    oddsForCurrencies[tradingPair]?.coefficient;
-  const currentCurrency: string =
-    oddsForCurrencies[tradingPair]?.currentCurrency;
-  const exchangeCurrency: string =
-    oddsForCurrencies[tradingPair]?.exchangeCurrency;
 
   const handleCreateDeal = useCallback(
     (side: string) => {
@@ -49,27 +54,41 @@ const Tiker = () => {
 
         stateCopy.status = 'Active';
         stateCopy.side = side;
-        stateCopy.price = currentCoefficient;
-        stateCopy.amount = balance[currentCurrency];
+        stateCopy.amount = +amount;
         stateCopy.instrument = tradingPair;
-        stateCopy.currentCurrency = currentCurrency;
-        stateCopy.exchangeCurrency = exchangeCurrency;
+
+        if (side === 'Buy') {
+          stateCopy.price = currentCoefficientBuy;
+          stateCopy.currentCurrency = currentCurrency;
+          stateCopy.exchangeCurrency = exchangeCurrency;
+        }
+
+        if (side === 'Sell') {
+          stateCopy.price = currentCoefficientSell;
+          stateCopy.currentCurrency = exchangeCurrency;
+          stateCopy.exchangeCurrency = currentCurrency;
+        }
+
+        setAmount('0');
 
         return stateCopy;
       });
-
-      dispatch(createDeal(deal));
     },
     [
-      dispatch,
-      currentCoefficient,
+      currentCoefficientBuy,
+      currentCoefficientSell,
       currentCurrency,
       exchangeCurrency,
-      deal,
-      balance,
+      amount,
       tradingPair,
     ]
   );
+
+  useEffect(() => {
+    if (deal.status === 'Active') {
+      dispatch(createDeal(deal));
+    }
+  }, [deal, dispatch]);
 
   return (
     <Box
@@ -105,15 +124,11 @@ const Tiker = () => {
               id="demo-simple-select"
               value={tradingPair}
               label="Currency pair"
-              onChange={handleChange}
+              onChange={handleChangeTradingPair}
               size="small"
             >
               <MenuItem value={'BYN/RUB'}>BYN/RUB</MenuItem>
-              <MenuItem value={'RUB/BYN'}>RUB/BYN</MenuItem>
-              <MenuItem value={'RUB/USD'}>RUB/USD</MenuItem>
-              <MenuItem value={'USD/RUB'}>USD/RUB</MenuItem>
               <MenuItem value={'BYN/USD'}>BYN/USD</MenuItem>
-              <MenuItem value={'USD/BYN'}>USD/BYN</MenuItem>
             </Select>
           </FormControl>
         </Box>
@@ -131,8 +146,9 @@ const Tiker = () => {
             InputLabelProps={{
               shrink: true,
             }}
-            value={balance[currentCurrency]}
+            value={amount}
             size="small"
+            onChange={handleChangeAmount}
           />
         </Box>
       </Box>
@@ -145,32 +161,6 @@ const Tiker = () => {
           justifyContent: 'space-between',
         }}
       >
-        {/* <Box
-          sx={{
-            width: '100px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '10px',
-          }}
-        >
-          <TextField
-            id="outlined-number"
-            label="Sell"
-            type="number"
-            InputLabelProps={{
-              shrink: true,
-            }}
-            size="small"
-            defaultValue={1.2}
-          />
-          <Button
-            color="error"
-            variant="contained"
-          >
-            Sell
-          </Button>
-        </Box>
-        <Box sx={{ width: '1px', bgcolor: '#000' }}></Box> */}
         <Box
           sx={{
             width: '100px',
@@ -187,12 +177,40 @@ const Tiker = () => {
               shrink: true,
             }}
             size="small"
-            value={currentCoefficient}
+            value={currentCoefficientSell}
+          />
+          <Button
+            color="error"
+            variant="contained"
+            disabled={!currentCoefficientBuy}
+            onClick={() => handleCreateDeal('Sell')}
+          >
+            Sell
+          </Button>
+        </Box>
+        <Box sx={{ width: '1px', bgcolor: '#000' }}></Box>
+        <Box
+          sx={{
+            width: '100px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '10px',
+          }}
+        >
+          <TextField
+            id="outlined-number"
+            label="Buy"
+            type="number"
+            InputLabelProps={{
+              shrink: true,
+            }}
+            size="small"
+            value={currentCoefficientBuy}
           />
           <Button
             color="success"
             variant="contained"
-            disabled={!currentCoefficient}
+            disabled={!currentCoefficientBuy}
             onClick={() => handleCreateDeal('Buy')}
           >
             Buy
